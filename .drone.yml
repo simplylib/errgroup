@@ -57,6 +57,6 @@ steps:
       - go test -v -race ./...
 ---
 kind: signature
-hmac: 826b09ef5bbd780a331af8595db2e1d0b6289f6e3c94ccc470a982fe6d01543e
+hmac: 02bc6616fd7a0795c13ef1109517f40631ad72db48975f9d495dd5dad308f515
 
 ...

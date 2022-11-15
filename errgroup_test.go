@@ -10,7 +10,9 @@ import (
 	"github.com/simplylib/multierror"
 )
 
-func TestGroupNoError(t *testing.T) {
+func TestNoError(t *testing.T) {
+	t.Parallel()
+
 	eg := Group{}
 
 	var (
@@ -39,6 +41,8 @@ func TestGroupNoError(t *testing.T) {
 }
 
 func TestSetLimit(t *testing.T) {
+	t.Parallel()
+
 	eg := Group{}
 
 	eg.SetLimit(runtime.NumCPU())
@@ -67,7 +71,54 @@ func TestSetLimit(t *testing.T) {
 		t.Fatalf("count (%v) != countTarget (%v)\n", count, countTarget)
 	}
 }
-func TestGroupSingleError(t *testing.T) {
+
+func TestTryGo(t *testing.T) {
+	t.Parallel()
+
+	eg := Group{}
+	eg.SetLimit(runtime.NumCPU())
+
+	closeChan := make(chan struct{})
+
+	var run bool
+	for i := 0; i < runtime.NumCPU(); i++ {
+		run = eg.TryGo(func() error {
+			<-closeChan
+			return io.EOF
+		})
+
+		if !run {
+			close(closeChan)
+			t.Fatal("could not run all goroutines")
+		}
+	}
+
+	if eg.TryGo(func() error { return nil }) {
+		t.Fatal("TryGo returned true when limit is currently hit")
+	}
+
+	close(closeChan)
+
+	err := eg.Wait()
+	me, ok := err.(multierror.Errors)
+	if !ok {
+		t.Fatalf("Expected a multierror got (%t)\n", me)
+	}
+
+	if len(me) != runtime.NumCPU() {
+		t.Fatalf("expected (%v) errors got (%v)\n", runtime.NumCPU(), len(me))
+	}
+
+	for i := range me {
+		if me[i] != io.EOF {
+			t.Fatalf("expected (io.EOF) got (%v)\n", err)
+		}
+	}
+}
+
+func TestSingleError(t *testing.T) {
+	t.Parallel()
+
 	eg := Group{}
 
 	eg.SetLimit(runtime.NumCPU())
@@ -93,9 +144,11 @@ func TestGroupSingleError(t *testing.T) {
 	if err != io.EOF {
 		t.Fatalf("expected io.EOF got (%T)\n", err)
 	}
-
 }
+
 func TestGroupMultiError(t *testing.T) {
+	t.Parallel()
+
 	eg := Group{}
 
 	eg.SetLimit(runtime.NumCPU())

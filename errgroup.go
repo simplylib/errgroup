@@ -22,7 +22,37 @@ func (g *Group) SetLimit(n int) {
 	g.bucket = make(chan struct{}, n)
 }
 
-// Go run a function, unbounded by default unless SetLimit(int) is called.
+// TryGo calls f in a separate goroutine, only if the goroutine limit set in SetLimit is not reached
+// at moment of Calling TryGo. Acts like Group.Go if SetLimit was not run.
+// Returns true if goroutine will/was started, false if not.
+func (g *Group) TryGo(f func() error) bool {
+	if g.bucket != nil {
+		select {
+		case g.bucket <- struct{}{}:
+		default:
+			return false
+		}
+	}
+
+	g.wg.Add(1)
+	go func() {
+		defer g.wg.Done()
+
+		if err := f(); err != nil {
+			g.mu.Lock()
+			g.errs = append(g.errs, err)
+			g.mu.Unlock()
+		}
+
+		if g.bucket != nil {
+			<-g.bucket
+		}
+	}()
+
+	return true
+}
+
+// Go run a function in a separate Goroutine, unbounded by default unless SetLimit(int) is called.
 func (g *Group) Go(f func() error) {
 	if g.bucket != nil {
 		g.bucket <- struct{}{}

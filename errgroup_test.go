@@ -44,31 +44,34 @@ func TestSetLimit(t *testing.T) {
 	t.Parallel()
 
 	eg := Group{}
+	eg.SetLimit(1)
 
-	eg.SetLimit(runtime.NumCPU())
+	stop := make(chan struct{})
+	i := 0
 
-	var (
-		count int
-		mu    sync.Mutex
-	)
+	eg.Go(func() error {
+		<-stop
+		i++
+		return nil
+	})
 
-	const countTarget = 10000
-
-	for i := 0; i < countTarget; i++ {
-		eg.Go(func() error {
-			mu.Lock()
-			count++
-			mu.Unlock()
-			return nil
-		})
+	ok := eg.TryGo(func() error {
+		<-stop
+		i++
+		return nil
+	})
+	if ok {
+		t.Fatalf("expected ok = false instead ok = true")
 	}
+
+	close(stop)
 
 	if err := eg.Wait(); err != nil {
 		t.Fatal(err)
 	}
 
-	if count != countTarget {
-		t.Fatalf("count (%v) != countTarget (%v)\n", count, countTarget)
+	if i != 1 {
+		t.Fatalf("expect i = 1 intead i = %v", i)
 	}
 }
 

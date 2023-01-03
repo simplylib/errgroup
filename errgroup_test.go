@@ -1,6 +1,7 @@
 package errgroup
 
 import (
+	"context"
 	"errors"
 	"io"
 	"runtime"
@@ -9,6 +10,53 @@ import (
 
 	"github.com/simplylib/multierror"
 )
+
+func TestWithContextTryGo(t *testing.T) {
+	t.Parallel()
+
+	eg, ctx := WithContext(context.Background())
+	eg.SetLimit(1)
+
+	ok := eg.TryGo(func() error {
+		return io.EOF
+	})
+	if !ok {
+		t.Fatal("expected ok = true instead ok = false")
+	}
+
+	err := eg.Wait()
+	if err != io.EOF {
+		t.Fatalf("expected io.EOF instead got (%T)", err)
+	}
+
+	select {
+	case <-ctx.Done():
+	default:
+		t.Fatal("expected cancelled context")
+	}
+}
+
+func TestWithContextGo(t *testing.T) {
+	t.Parallel()
+
+	eg, ctx := WithContext(context.Background())
+	eg.SetLimit(1)
+
+	eg.Go(func() error {
+		return io.EOF
+	})
+
+	err := eg.Wait()
+	if err != io.EOF {
+		t.Fatalf("expected io.EOF instead got (%T)", err)
+	}
+
+	select {
+	case <-ctx.Done():
+	default:
+		t.Fatal("expected cancelled context")
+	}
+}
 
 func TestNoError(t *testing.T) {
 	t.Parallel()

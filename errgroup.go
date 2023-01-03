@@ -4,6 +4,7 @@
 package errgroup
 
 import (
+	"context"
 	"sync"
 
 	"github.com/simplylib/multierror"
@@ -13,10 +14,17 @@ import (
 type Group struct {
 	bucket chan struct{}
 
+	ctxCancel context.CancelFunc
+
 	wg sync.WaitGroup
 
 	mu   sync.Mutex
 	errs []error
+}
+
+func WithContext(ctx context.Context) (*Group, context.Context) {
+	derivCtx, ctxCancel := context.WithCancel(ctx)
+	return &Group{ctxCancel: ctxCancel}, derivCtx
 }
 
 // SetLimit of concurrently running goroutines to n, must be called before.
@@ -45,6 +53,10 @@ func (g *Group) TryGo(f func() error) bool {
 			g.mu.Lock()
 			g.errs = append(g.errs, err)
 			g.mu.Unlock()
+
+			if g.ctxCancel != nil {
+				g.ctxCancel()
+			}
 		}
 
 		if g.bucket != nil {
@@ -69,6 +81,10 @@ func (g *Group) Go(f func() error) {
 			g.mu.Lock()
 			g.errs = append(g.errs, err)
 			g.mu.Unlock()
+
+			if g.ctxCancel != nil {
+				g.ctxCancel()
+			}
 		}
 
 		if g.bucket != nil {
@@ -80,6 +96,10 @@ func (g *Group) Go(f func() error) {
 // Wait until all goroutines are finished and returning a Multierror if len(errors) > 1 or the direct error if 1.
 func (g *Group) Wait() error {
 	g.wg.Wait()
+
+	if g.ctxCancel != nil {
+		g.ctxCancel()
+	}
 
 	if len(g.errs) > 1 {
 		return multierror.Errors(g.errs)

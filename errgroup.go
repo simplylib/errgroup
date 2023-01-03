@@ -1,4 +1,6 @@
-// package errgroup implements a drop in replacement for golang.org/x/sync/multierror
+// Package errgroup implements a mostly drop in replacement for golang.org/x/sync/multierror
+// with one major change, where golang.org/x/sync/errgroup returns the first non-nil error (if any)
+// github.com/simplylib/errgroup returns all the errors using github.com/simplylib/multierror
 package errgroup
 
 import (
@@ -35,6 +37,7 @@ func (g *Group) TryGo(f func() error) bool {
 	}
 
 	g.wg.Add(1)
+	// manually inline function for Go and TryGo
 	go func() {
 		defer g.wg.Done()
 

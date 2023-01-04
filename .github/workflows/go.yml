@@ -1,28 +1,7 @@
-name: go
+name: go-workflows
 on:
   push:
   pull_request:
-permissions:
-  contents: read
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v3
-
-    - name: Set up Go
-      uses: actions/setup-go@v3
-      with:
-        go-version: 1.19
-
-    - name: Build
-      run: go build -v ./...
-
-    - name: Test
-      run: go test -race -v ./...
-    
-    - name: Vet
-      run: go vet -v ./...
-      
-    - name: Go Mod Tidy
-      run: go mod tidy && git diff --exit-code -- go.mod go.sum
+  call-go-workflow:
+    uses: simplylib/githubworkflows/.github/workflows/go.yml

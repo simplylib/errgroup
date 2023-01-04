@@ -3,5 +3,5 @@ on:
   push:
   pull_request:
 jobs:
-  call-go-workflow:
+  go:
     uses: simplylib/githubworkflows/.github/workflows/go.yml@main

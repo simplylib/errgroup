@@ -4,4 +4,4 @@ on:
   pull_request:
 jobs:
   call-go-workflow:
-    uses: simplylib/githubworkflows/.github/workflows/go.yml
+    uses: simplylib/githubworkflows/.github/workflows/go.yml@main

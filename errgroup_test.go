@@ -7,8 +7,6 @@ import (
 	"runtime"
 	"sync"
 	"testing"
-
-	"github.com/simplylib/multierror"
 )
 
 func TestWithContextTryGo(t *testing.T) {
@@ -151,10 +149,12 @@ func TestTryGo(t *testing.T) {
 	close(closeChan)
 
 	err := eg.Wait()
-	me, ok := err.(multierror.Errors)
+	multierror, ok := err.(interface{ Unwrap() []error })
 	if !ok {
-		t.Fatalf("Expected a multierror got (%t)\n", me)
+		t.Fatalf("Expected a multierror got (%t)\n", multierror)
 	}
+
+	me := multierror.Unwrap()
 
 	if len(me) != runtime.NumCPU() {
 		t.Fatalf("expected (%v) errors got (%v)\n", runtime.NumCPU(), len(me))
@@ -223,12 +223,12 @@ func TestGroupMultiError(t *testing.T) {
 		t.Fatal("expected err != nil")
 	}
 
-	me, ok := err.(multierror.Errors)
+	me, ok := err.(interface{ Unwrap() []error })
 	if !ok {
 		t.Fatalf("expected a multierror.Errors got (%T)\n", me)
 	}
 
-	errs := []error(me)
+	errs := me.Unwrap()
 
 	if len(errs) != countTarget {
 		t.Fatalf("len(errs) = (%v) expected (%v)\n", len(errs), countTarget)

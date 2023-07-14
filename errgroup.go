@@ -5,9 +5,8 @@ package errgroup
 
 import (
 	"context"
+	"errors"
 	"sync"
-
-	"github.com/simplylib/multierror"
 )
 
 // Group of goroutines concurrently running tasks, optionally limited by SetLimit(int).
@@ -102,7 +101,7 @@ func (g *Group) Wait() error {
 	}
 
 	if len(g.errs) > 1 {
-		return multierror.Errors(g.errs)
+		return errors.Join(g.errs...)
 	}
 
 	if len(g.errs) == 1 {

@@ -6,4 +6,4 @@ A Go (golang) library that is a drop in replacement for [x/sync/multierror](http
 
 where [x/sync/multierror](https://pkg.go.dev/golang.org/x/sync/errgroup)'s ```Group.Wait()``` "returns the first non-nil error (if any)"
 
-[simplylib/errgroup](https://pkg.go.dev/github.com/simplylib/errgroup)'s ```Group.Wait()``` returns all the errors using [simplylib/multierror](https://pkg.go.dev/github.com/simplylib/multierror)
+[simplylib/errgroup](https://pkg.go.dev/github.com/simplylib/errgroup)'s ```Group.Wait()``` returns all the errors using [errors.Join](https://pkg.go.dev/errors#Join)
